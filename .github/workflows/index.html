@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catatan Keuangan</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Warna Natural & Kalem (Light Mode) */
+            --bg-body: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-main: #1f2937;
+            --text-muted: #6b7280;
+            --primary: #3b82f6; /* Soft Blue */
+            --primary-hover: #2563eb;
+            --success: #10b981; /* Soft Green */
+            --danger: #ef4444; /* Soft Red */
+            --warning: #f59e0b; /* Soft Orange */
+            --border-color: #e5e7eb;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+        }
+
+        body { 
+            background-color: var(--bg-body);
+            color: var(--text-main); 
+            padding: 30px 20px; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+        }
+
+        .container { 
+            width: 100%; 
+            max-width: 950px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 24px; 
+        }
+
+        /* Minimalist Cards */
+        .card { 
+            background: var(--card-bg); 
+            padding: 24px; 
+            border-radius: 16px; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+        }
+
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding-bottom: 15px; 
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap; 
+            gap: 15px; 
+        }
+        
+        header h1 { 
+            font-size: 1.6rem; 
+            font-weight: 700; 
+            color: var(--text-main);
+        }
+
+        .header-btns { display: flex; gap: 8px; }
+
+        /* Soft Buttons */
+        button { 
+            padding: 10px 16px; 
+            border-radius: 8px; 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+            cursor: pointer; 
+            border: none; 
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+        button:active { transform: scale(0.97); }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        
+        .btn-success { background: #d1fae5; color: #065f46; }
+        .btn-success:hover { background: #a7f3d0; }
+        
+        .btn-warning { background: #fef3c7; color: #92400e; }
+        .btn-warning:hover { background: #fde68a; }
+
+        .btn-danger { background: #fee2e2; color: #991b1b; }
+        .btn-danger:hover { background: #fecaca; }
+
+        /* Summary Grid */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+        .summary-grid .card { 
+            text-align: center; 
+            padding: 30px 20px;
+        }
+
+        .summary-grid h3 { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; }
+        .summary-grid p { font-size: 1.8rem; font-weight: 700; }
+        .text-green { color: var(--success); }
+        .text-red { color: var(--danger); }
+        .text-blue { color: var(--primary); }
+
+        /* Main Layout */
+        .main-content { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .main-content { grid-template-columns: 1fr; } }
+
+        /* Forms & Inputs - Clean Style */
+        form { display: flex; flex-direction: column; gap: 12px; }
+        input, select { 
+            padding: 12px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color); 
+            background: #f9fafb; 
+            color: var(--text-main); 
+            font-size: 0.95rem; 
+            transition: border-color 0.2s ease, background-color 0.2s ease;
+        }
+        input:focus, select:focus { 
+            outline: none; 
+            border-color: var(--primary); 
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        .card h3 { font-size: 1.1rem; margin-bottom: 15px; color: var(--text-main); }
+
+        /* Progress Bars */
+        .progress-bar-bg { background: #e5e7eb; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 8px; }
+        .progress-bar-fill { height: 100%; width: 0%; transition: width 0.5s ease-out; }
+
+        /* Items Box (Goals & Limits) */
+        .item-box { 
+            background: #f9fafb; 
+            padding: 16px; 
+            border-radius: 12px; 
+            margin-top: 12px; 
+            border: 1px solid var(--border-color); 
+        }
+        .item-header { display: flex; justify-content: space-between; font-weight: 600; font-size: 0.95rem; margin-bottom: 5px; }
+
+        /* Transaction List */
+        .transaction-list { list-style: none; max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 5px; }
+        .transaction-list::-webkit-scrollbar { width: 6px; }
+        .transaction-list::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+        
+        .transaction-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            background: #ffffff; 
+            padding: 14px 16px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--primary);
+        }
+        .transaction-item.income { border-left-color: var(--success); }
+        .transaction-item.expense { border-left-color: var(--danger); }
+        .transaction-item strong { font-size: 1rem; color: var(--text-main); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Catatan Keuangan</h1>
+        <div class="header-btns">
+            <button class="btn-success" onclick="exportToCSV()">Export .CSV</button>
+            <button class="btn-warning" onclick="backupJSON()">Backup</button>
+            <button class="btn-primary" onclick="document.getElementById('importFile').click()">Restore</button>
+            <input type="file" id="importFile" style="display:none" onchange="restoreJSON(event)">
+        </div>
+    </header>
+
+    <div class="summary-grid">
+        <div class="card">
+            <h3>SISA SALDO</h3>
+            <p id="totalBalance" class="text-blue">Rp 0</p>
+        </div>
+        <div class="card">
+            <h3>PEMASUKAN</h3>
+            <p id="totalIncome" class="text-green">Rp 0</p>
+        </div>
+        <div class="card">
+            <h3>PENGELUARAN</h3>
+            <p id="totalExpense" class="text-red">Rp 0</p>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <h3>Catat Transaksi Baru</h3>
+            <form id="transactionForm">
+                <input type="text" id="desc" placeholder="Keterangan (misal: Beli makan, Saku)" required autocomplete="off">
+                <input type="number" id="amount" placeholder="Nominal (Rp)" required>
+                <select id="type">
+                    <option value="expense">Pengeluaran (-)</option>
+                    <option value="income">Pemasukan (+)</option>
+                </select>
+                <select id="category">
+                    <option value="Makanan">Makanan & Minuman</option>
+                    <option value="Transport">Transportasi</option>
+                    <option value="Oprek & Gadget">Oprek & Gadget</option>
+                    <option value="Hiburan">Hiburan / Game</option>
+                    <option value="Tabungan">Tabungan / Investasi</option>
+                    <option value="Lain-lain">Lain-lain</option>
+                </select>
+                <button type="submit" class="btn-primary" style="margin-top: 5px;">Simpan Transaksi</button>
+            </form>
+        </div>
+
+        <div class="card" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h3 style="width: 100%; text-align: left;">Grafik Pengeluaran</h3>
+            <div style="width: 240px; height: 240px; margin-top: 10px;">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="card">
+            <h3>Batas Anggaran Bulanan</h3>
+            <div id="categoryBudgetList" style="max-height: 280px; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+
+        <div class="card">
+            <h3>Target Tabungan</h3>
+            <form id="goalForm" style="flex-direction: row; gap: 8px; margin-bottom: 10px;">
+                <input type="text" id="goalName" placeholder="Nama Target" required style="flex: 2; padding: 10px;">
+                <input type="number" id="goalTarget" placeholder="Target Rp" required style="flex: 2; padding: 10px;">
+                <button type="submit" class="btn-primary" style="padding: 10px;">Tambah</button>
+            </form>
+            <div id="goalsList" style="max-height: 220px; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Riwayat Transaksi</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+            <input type="text" id="search" placeholder="Cari catatan..." oninput="renderUI()" style="flex: 2; min-width: 200px;">
+            <select id="filterCategory" onchange="renderUI()" style="flex: 1; min-width: 150px;">
+                <option value="ALL">Semua Kategori</option>
+                <option value="Makanan">Makanan & Minuman</option>
+                <option value="Transport">Transportasi</option>
+                <option value="Oprek & Gadget">Oprek & Gadget</option>
+                <option value="Hiburan">Hiburan / Game</option>
+                <option value="Tabungan">Tabungan / Investasi</option>
+                <option value="Lain-lain">Lain-lain</option>
+            </select>
+        </div>
+        <ul id="transactionList" class="transaction-list"></ul>
+    </div>
+</div>
+
+<script>
+    const categoryBudgets = {
+        'Makanan': 500000,
+        'Transport': 200000,
+        'Oprek & Gadget': 300000,
+        'Hiburan': 200000,
+        'Lain-lain': 200000
+    };
+
+    // Ubah nama key localStorage biar data lama nggak bentrok
+    let transactions = JSON.parse(localStorage.getItem('natural_transactions')) || [];
+    let goals = JSON.parse(localStorage.getItem('natural_goals')) || [];
+    let myChart = null;
+
+    // Setting warna font chart agar cocok dengan light mode
+    Chart.defaults.color = '#6b7280';
+    Chart.defaults.font.family = "system-ui, -apple-system, sans-serif";
+
+    const formatRp = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num);
+
+    document.getElementById('transactionForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const desc = document.getElementById('desc').value;
+        const amount = parseFloat(document.getElementById('amount').value);
+        const type = document.getElementById('type').value;
+        const category = document.getElementById('category').value;
+
+        transactions.push({ id: Date.now(), desc, amount, type, category, date: new Date().toLocaleDateString('id-ID') });
+        saveAndRender();
+        document.getElementById('desc').value = '';
+        document.getElementById('amount').value = '';
+    });
+
+    document.getElementById('goalForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('goalName').value;
+        const target = parseFloat(document.getElementById('goalTarget').value);
+        goals.push({ id: Date.now(), name, target, current: 0 });
+        saveAndRender();
+        document.getElementById('goalName').value = '';
+        document.getElementById('goalTarget').value = '';
+    });
+
+    function addSavings(goalId) {
+        const amount = parseFloat(prompt("Masukkan nominal yang ditabung (Rp):"));
+        if (!amount || amount <= 0) return;
+        const goal = goals.find(g => g.id === goalId);
+        if (goal) {
+            goal.current += amount;
+            transactions.push({
+                id: Date.now(), desc: `Nabung: ${goal.name}`, amount: amount, type: 'expense', category: 'Tabungan', date: new Date().toLocaleDateString('id-ID')
+            });
+            saveAndRender();
+        }
+    }
+
+    function deleteGoal(id) { goals = goals.filter(g => g.id !== id); saveAndRender(); }
+    function deleteTransaction(id) { transactions = transactions.filter(t => t.id !== id); saveAndRender(); }
+
+    function saveAndRender() {
+        localStorage.setItem('natural_transactions', JSON.stringify(transactions));
+        localStorage.setItem('natural_goals', JSON.stringify(goals));
+        renderUI();
+    }
+
+    function renderUI() {
+        const listEl = document.getElementById('transactionList');
+        const searchVal = document.getElementById('search').value.toLowerCase();
+        const filterCat = document.getElementById('filterCategory').value;
+
+        listEl.innerHTML = '';
+        let income = 0, expense = 0;
+        let categoryTotals = {};
+
+        const filtered = transactions.filter(t => t.desc.toLowerCase().includes(searchVal) && (filterCat === 'ALL' || t.category === filterCat));
+
+        transactions.forEach(t => {
+            if (t.type === 'income') income += t.amount;
+            else { expense += t.amount; categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount; }
+        });
+
+        filtered.reverse().forEach(t => {
+            const li = document.createElement('li');
+            li.className = `transaction-item ${t.type}`;
+            li.innerHTML = `
+                <div>
+                    <strong>${t.desc}</strong> 
+                    <small style="color: var(--text-muted); display: block; margin-top: 4px;">${t.category} • ${t.date}</small>
+                </div>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <span style="font-weight: 700; font-size: 1.05rem;" class="${t.type === 'income' ? 'text-green' : 'text-red'}">
+                        ${t.type === 'income' ? '+' : '-'}${formatRp(t.amount)}
+                    </span>
+                    <button class="btn-danger" style="padding:6px 10px; font-size:0.8rem;" onclick="deleteTransaction(${t.id})">Hapus</button>
+                </div>
+            `;
+            listEl.appendChild(li);
+        });
+
+        document.getElementById('totalBalance').innerText = formatRp(income - expense);
+        document.getElementById('totalIncome').innerText = formatRp(income);
+        document.getElementById('totalExpense').innerText = formatRp(expense);
+
+        renderGoals();
+        renderCategoryBudgets(categoryTotals);
+        renderChart(categoryTotals);
+    }
+
+    function renderGoals() {
+        const goalsContainer = document.getElementById('goalsList');
+        goalsContainer.innerHTML = '';
+        goals.forEach(g => {
+            const percent = Math.min((g.current / g.target) * 100, 100).toFixed(1);
+            goalsContainer.innerHTML += `
+                <div class="item-box">
+                    <div class="item-header"><span>${g.name}</span><span style="color: var(--primary);">${percent}%</span></div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${percent}%; background: var(--primary);"></div></div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px;">
+                        <small style="color: var(--text-muted); font-weight: 500;">${formatRp(g.current)} / ${formatRp(g.target)}</small>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-success" style="padding: 6px 10px; font-size:0.8rem;" onclick="addSavings(${g.id})">+ Input</button>
+                            <button class="btn-danger" style="padding: 6px 10px; font-size:0.8rem;" onclick="deleteGoal(${g.id})">Hapus</button>
+                        </div>
+                    </div>
+                </div>`;
+        });
+    }
+
+    function renderCategoryBudgets(categoryTotals) {
+        const container = document.getElementById('categoryBudgetList');
+        container.innerHTML = '';
+        for (const [cat, limit] of Object.entries(categoryBudgets)) {
+            const spent = categoryTotals[cat] || 0;
+            const percent = Math.min((spent / limit) * 100, 100).toFixed(1);
+            const isOver = spent > limit;
+            const color = isOver ? 'var(--danger)' : 'var(--primary)';
+
+            container.innerHTML += `
+                <div class="item-box">
+                    <div class="item-header">
+                        <span>${cat}</span>
+                        <span class="${isOver ? 'text-red' : ''}">${formatRp(spent)} / ${formatRp(limit)}</span>
+                    </div>
+                    <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: ${percent}%; background: ${color};"></div></div>
+                </div>`;
+        }
+    }
+
+    function renderChart(categoryTotals) {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        const labels = Object.keys(categoryTotals);
+        const data = Object.values(categoryTotals);
+
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels.length ? labels : ['Belum ada pengeluaran'],
+                datasets: [{
+                    data: data.length ? data : [1],
+                    backgroundColor: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#6366f1'],
+                    borderWidth: 2, borderColor: '#ffffff', hoverOffset: 4
+                }]
+            },
+            options: { cutout: '65%', plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } } } }
+        });
+    }
+
+    function backupJSON() {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([JSON.stringify({ transactions, goals }, null, 2)], { type: 'application/json' }));
+        a.download = `Backup_Keuangan_${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+    }
+
+    function restoreJSON(event) {
+        const reader = new FileReader();
+        reader.onload = e => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.transactions && data.goals) { transactions = data.transactions; goals = data.goals; saveAndRender(); alert('Data berhasil dipulihkan!'); }
+            } catch (err) { alert('Format file tidak valid!'); }
+        };
+        reader.readAsText(event.target.files[0]);
+    }
+
+    function exportToCSV() {
+        if (!transactions.length) return alert('Belum ada data transaksi!');
+        let csv = "data:text/csv;charset=utf-8,Tanggal,Keterangan,Kategori,Tipe,Nominal\n" + transactions.map(t => `${t.date},"${t.desc}",${t.category},${t.type},${t.amount}`).join('\n');
+        const link = document.createElement("a"); link.href = encodeURI(csv); link.download = `Laporan_Keuangan_${new Date().toISOString().slice(0,10)}.csv`; link.click();
+    }
+
+    renderUI();
+</script>
+
+</body>
+</html>
